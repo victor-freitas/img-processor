@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - images_redis_data:/data
+
+  rqworker:
+    build: ./worker
+    command: rq worker --url redis://redis:6379 default
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - MONGO_URI=mongodb://mongodb:27017
+    volumes:
+      - ./worker:/app
+    env_file: .env
+
+  scheduler:
+    build: ./worker
+    command: python /app/scheduler.py
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - MONGO_URI=mongodb://mongodb:27017
+    volumes:
+      - ./worker:/app
+    env_file: .env
+
+volumes:
+  images_redis_data:
